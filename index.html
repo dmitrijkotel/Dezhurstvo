@@ -432,6 +432,10 @@
         duty: selected
       });
 
+      if (history.length > 10) {
+        history.length = 10;
+      }
+
       localStorage.setItem("history", JSON.stringify(history));
     }
 
@@ -445,6 +449,7 @@
 
       const text = result.selected.join(" и ") || "нет";
       document.getElementById("bigResult").innerText = text.toUpperCase();
+      document.getElementById("smallResult").innerText = text;
 
       openResult();
       renderQueue(result.newQueue);
@@ -456,10 +461,22 @@
     };
 
     document.getElementById("resetBtn").onclick = () => {
-      if (confirm("Вы точно хотите сбросить очередь и историю?")) {
-        localStorage.clear();
-        location.reload();
+      if (!confirm("Вы точно хотите сбросить очередь и историю?")) {
+        return;
       }
+
+      const resetPassword = prompt("Введите пароль для сброса:");
+      if (resetPassword === null) {
+        return;
+      }
+
+      if (resetPassword !== "22-46топ") {
+        alert("Неверный пароль. Сброс отменён.");
+        return;
+      }
+
+      localStorage.clear();
+      location.reload();
     };
 
     const overlay = document.getElementById("overlay");
