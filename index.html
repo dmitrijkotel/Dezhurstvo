@@ -175,6 +175,24 @@
       gap: 8px;
     }
 
+    .history-tools {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .history-tools button {
+      padding: 10px 12px;
+      font-size: 13px;
+      background: #eef2ff;
+      color: #1e3a8a;
+    }
+
+    .history-tools button:hover {
+      background: #dbeafe;
+    }
+
     .queue-pair {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -254,6 +272,61 @@
       color: #0f172a;
     }
 
+    .auth-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: grid;
+      place-items: center;
+      background: rgba(2, 6, 23, 0.72);
+      padding: 16px;
+    }
+
+    .auth-card {
+      width: min(92vw, 420px);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    .auth-card h2 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      text-align: center;
+    }
+
+    .auth-card p {
+      margin: 0 0 14px;
+      font-size: 14px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .auth-card input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 11px 12px;
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+
+    .auth-card button {
+      width: 100%;
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .auth-error {
+      min-height: 20px;
+      font-size: 13px;
+      color: #b91c1c;
+      text-align: center;
+      margin: 0 0 8px;
+    }
+
     @media (max-width: 860px) {
       .layout {
         grid-template-columns: 1fr;
@@ -288,6 +361,7 @@
 
         <div class="actions">
           <button id="selectBtn" type="button">Выбрать дежурных</button>
+          <button id="undoBtn" type="button">Отменить последнее дежурство</button>
           <button id="infoBtn" type="button">Как работает алгоритм</button>
         </div>
       </article>
@@ -297,10 +371,25 @@
         <div id="queueView" class="queue-list"></div>
 
         <h2 style="margin-top: 16px;">История</h2>
+        <div class="history-tools">
+          <button id="exportHistoryBtn" type="button">Скачать JSON</button>
+          <button id="importHistoryBtn" type="button">Загрузить JSON</button>
+          <input id="importHistoryInput" type="file" accept="application/json" hidden />
+        </div>
         <div id="historyView" class="history-list"></div>
       </article>
     </section>
   </main>
+
+  <section id="authGate" class="auth-gate">
+    <div class="auth-card">
+      <h2>Стой! Кто идёт?</h2>
+      <p>Введите пароль для входа в режим выбора дежурных.</p>
+      <input id="authPasswordInput" type="password" placeholder="Пароль доступа" />
+      <p id="authError" class="auth-error"></p>
+      <button id="authSubmitBtn" type="button">Войти</button>
+    </div>
+  </section>
 
   <div class="overlay" id="overlay"></div>
 
@@ -326,6 +415,9 @@
   </section>
 
   <script>
+    const ACCESS_PASSWORD = "22-46";
+    const ACCESS_SESSION_KEY = "duty-access-granted";
+
     const students = [
       "Акопян Армен", "Больбат Вячеслав", "Вильгельм Эмма", "Голуб Анежа",
       "Жестянников Даниил", "Журавлева Полина", "Изрипова Мадина", "Котельников Дмитрий",
@@ -340,6 +432,22 @@
     }
     if (!localStorage.getItem("history")) {
       localStorage.setItem("history", JSON.stringify([]));
+    }
+
+    async function tryLoadHistoryFromFile() {
+      if (JSON.parse(localStorage.getItem("history")).length > 0) {
+        return;
+      }
+
+      try {
+        const response = await fetch("./history.json", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!Array.isArray(data)) return;
+        localStorage.setItem("history", JSON.stringify(data.slice(0, 10)));
+      } catch (_error) {
+        // Для GitHub Pages нормально, если файла нет или он недоступен.
+      }
     }
 
     function renderStudents() {
@@ -439,16 +547,80 @@
       localStorage.setItem("history", JSON.stringify(history));
     }
 
+    function saveLastState(queue, history) {
+      localStorage.setItem("lastState", JSON.stringify({ queue, history }));
+    }
+
+    function tryUndoLastSelection() {
+      const raw = localStorage.getItem("lastState");
+      if (!raw) {
+        alert("Нет сохранённого последнего дежурства для отмены.");
+        return;
+      }
+
+      const lastState = JSON.parse(raw);
+      if (!Array.isArray(lastState.queue) || !Array.isArray(lastState.history)) {
+        alert("Не удалось восстановить предыдущее состояние.");
+        return;
+      }
+
+      localStorage.setItem("queue", JSON.stringify(lastState.queue));
+      localStorage.setItem("history", JSON.stringify(lastState.history));
+      localStorage.removeItem("lastState");
+
+      renderQueue(lastState.queue);
+      renderHistory();
+      alert("Последнее дежурство отменено.");
+    }
+
+    function downloadHistoryJson() {
+      const history = JSON.parse(localStorage.getItem("history"));
+      const blob = new Blob([JSON.stringify(history, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "history.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function normalizeHistory(data) {
+      if (!Array.isArray(data)) return null;
+      const valid = data.filter((row) => {
+        return row
+          && typeof row.date === "string"
+          && Array.isArray(row.duty)
+          && row.duty.every((name) => typeof name === "string");
+      });
+      return valid.slice(0, 10);
+    }
+
+    async function importHistoryJson(file) {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const normalized = normalizeHistory(parsed);
+      if (!normalized) {
+        alert("Некорректный JSON. Ожидается массив записей истории.");
+        return;
+      }
+      localStorage.setItem("history", JSON.stringify(normalized));
+      renderHistory();
+      alert("История загружена из JSON файла.");
+    }
+
     document.getElementById("selectBtn").onclick = () => {
       const queue = JSON.parse(localStorage.getItem("queue"));
+      const historyBefore = JSON.parse(localStorage.getItem("history"));
       const absent = getAbsent();
       const result = selectDuty(queue, absent);
 
+      saveLastState(queue, historyBefore);
       localStorage.setItem("queue", JSON.stringify(result.newQueue));
       saveHistory(result.selected);
 
       const text = result.selected.join(" и ") || "нет";
       document.getElementById("bigResult").innerText = text.toUpperCase();
+      document.getElementById("smallResult").innerText = text;
 
       openResult();
       renderQueue(result.newQueue);
@@ -457,6 +629,10 @@
       document.querySelectorAll("input").forEach((x) => {
         x.checked = false;
       });
+    };
+
+    document.getElementById("undoBtn").onclick = () => {
+      tryUndoLastSelection();
     };
 
     document.getElementById("resetBtn").onclick = () => {
@@ -476,6 +652,27 @@
 
       localStorage.clear();
       location.reload();
+    };
+
+    document.getElementById("exportHistoryBtn").onclick = () => {
+      downloadHistoryJson();
+    };
+
+    const importHistoryInput = document.getElementById("importHistoryInput");
+    document.getElementById("importHistoryBtn").onclick = () => {
+      importHistoryInput.click();
+    };
+
+    importHistoryInput.onchange = async (event) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      try {
+        await importHistoryJson(file);
+      } catch (_error) {
+        alert("Не удалось прочитать файл. Проверьте формат JSON.");
+      } finally {
+        importHistoryInput.value = "";
+      }
     };
 
     const overlay = document.getElementById("overlay");
@@ -505,9 +702,53 @@
       closeInfo();
     };
 
-    renderStudents();
-    renderQueue(JSON.parse(localStorage.getItem("queue")));
-    renderHistory();
+    async function init() {
+      await tryLoadHistoryFromFile();
+      renderStudents();
+      renderQueue(JSON.parse(localStorage.getItem("queue")));
+      renderHistory();
+    }
+
+    init();
+
+    const authGate = document.getElementById("authGate");
+    const authPasswordInput = document.getElementById("authPasswordInput");
+    const authSubmitBtn = document.getElementById("authSubmitBtn");
+    const authError = document.getElementById("authError");
+
+    function unlockApp() {
+      authGate.style.display = "none";
+      authPasswordInput.value = "";
+      authError.textContent = "";
+      sessionStorage.setItem(ACCESS_SESSION_KEY, "1");
+    }
+
+    function checkAccess() {
+      if (sessionStorage.getItem(ACCESS_SESSION_KEY) === "1") {
+        unlockApp();
+        return;
+      }
+      authGate.style.display = "grid";
+      authPasswordInput.focus();
+    }
+
+    function submitAccessPassword() {
+      if (authPasswordInput.value === ACCESS_PASSWORD) {
+        unlockApp();
+        return;
+      }
+      authError.textContent = "Неверный пароль.";
+      authPasswordInput.select();
+    }
+
+    authSubmitBtn.onclick = submitAccessPassword;
+    authPasswordInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        submitAccessPassword();
+      }
+    });
+
+    checkAccess();
   </script>
 </body>
 </html>
