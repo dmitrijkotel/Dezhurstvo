@@ -14,6 +14,8 @@
       --primary-hover: #1d4ed8;
       --success: #15803d;
       --success-hover: #166534;
+      --warning: #b45309;
+      --warning-hover: #92400e;
       --danger: #b91c1c;
       --danger-hover: #991b1b;
       --border: #e5e7eb;
@@ -148,6 +150,15 @@
 
     #selectBtn:hover {
       background: var(--success-hover);
+    }
+
+    #undoBtn {
+      background: var(--warning);
+      color: #fff;
+    }
+
+    #undoBtn:hover {
+      background: var(--warning-hover);
     }
 
     #infoBtn {
@@ -288,6 +299,7 @@
 
         <div class="actions">
           <button id="selectBtn" type="button">Выбрать дежурных</button>
+          <button id="undoBtn" type="button">Отменить последнее дежурство</button>
           <button id="infoBtn" type="button">Как работает алгоритм</button>
         </div>
       </article>
@@ -439,16 +451,45 @@
       localStorage.setItem("history", JSON.stringify(history));
     }
 
+    function saveLastState(queue, history) {
+      localStorage.setItem("lastState", JSON.stringify({ queue, history }));
+    }
+
+    function tryUndoLastSelection() {
+      const raw = localStorage.getItem("lastState");
+      if (!raw) {
+        alert("Нет сохранённого последнего дежурства для отмены.");
+        return;
+      }
+
+      const lastState = JSON.parse(raw);
+      if (!Array.isArray(lastState.queue) || !Array.isArray(lastState.history)) {
+        alert("Не удалось восстановить предыдущее состояние.");
+        return;
+      }
+
+      localStorage.setItem("queue", JSON.stringify(lastState.queue));
+      localStorage.setItem("history", JSON.stringify(lastState.history));
+      localStorage.removeItem("lastState");
+
+      renderQueue(lastState.queue);
+      renderHistory();
+      alert("Последнее дежурство отменено.");
+    }
+
     document.getElementById("selectBtn").onclick = () => {
       const queue = JSON.parse(localStorage.getItem("queue"));
+      const historyBefore = JSON.parse(localStorage.getItem("history"));
       const absent = getAbsent();
       const result = selectDuty(queue, absent);
 
+      saveLastState(queue, historyBefore);
       localStorage.setItem("queue", JSON.stringify(result.newQueue));
       saveHistory(result.selected);
 
       const text = result.selected.join(" и ") || "нет";
       document.getElementById("bigResult").innerText = text.toUpperCase();
+      document.getElementById("smallResult").innerText = text;
 
       openResult();
       renderQueue(result.newQueue);
@@ -457,6 +498,10 @@
       document.querySelectorAll("input").forEach((x) => {
         x.checked = false;
       });
+    };
+
+    document.getElementById("undoBtn").onclick = () => {
+      tryUndoLastSelection();
     };
 
     document.getElementById("resetBtn").onclick = () => {
