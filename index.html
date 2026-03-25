@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Выбор дежурных</title>
+  <style>
+    :root {
+      --bg: #f3f6fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #15803d;
+      --success-hover: #166534;
+      --danger: #b91c1c;
+      --danger-hover: #991b1b;
+      --border: #e5e7eb;
+      --shadow: 0 10px 20px rgba(15, 23, 42, 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, Arial, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #eaf1ff, var(--bg) 45%);
+    }
+
+    .app {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .title-wrap p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .hint {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .student-list {
+      max-height: 420px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fafcff;
+    }
+
+    .student-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid #edf1f5;
+      font-size: 14px;
+    }
+
+    .student-item:last-child {
+      border-bottom: 0;
+    }
+
+    .student-item label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .student-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    .actions {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+
+    button:focus-visible {
+      outline: 2px solid #93c5fd;
+      outline-offset: 2px;
+    }
+
+    #selectBtn {
+      background: var(--success);
+      color: #fff;
+    }
+
+    #selectBtn:hover {
+      background: var(--success-hover);
+    }
+
+    #infoBtn {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    #infoBtn:hover {
+      background: var(--primary-hover);
+    }
+
+    #resetBtn {
+      background: var(--danger);
+      color: #fff;
+      white-space: nowrap;
+    }
+
+    #resetBtn:hover {
+      background: var(--danger-hover);
+    }
+
+    .queue-list,
+    .history-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .queue-pair {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fcfdff;
+      font-size: 14px;
+    }
+
+    .history-item {
+      padding: 8px 10px;
+      border-left: 3px solid #bfdbfe;
+      background: #f8fbff;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    .empty {
+      margin: 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.58);
+      display: none;
+      z-index: 30;
+    }
+
+    .modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: min(92vw, 480px);
+      padding: 20px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: #fff;
+      box-shadow: var(--shadow);
+      display: none;
+      z-index: 31;
+      text-align: center;
+    }
+
+    .modal h3 {
+      margin: 0 0 10px;
+      font-size: 20px;
+    }
+
+    .result-big {
+      margin: 12px 0;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .modal p,
+    .modal li {
+      color: #334155;
+      line-height: 1.4;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    .modal ul {
+      margin: 12px 0;
+      padding-left: 20px;
+    }
+
+    .modal .close {
+      margin-top: 8px;
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+
+    @media (max-width: 860px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      #resetBtn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="title-wrap">
+        <h1>Выбор дежурных</h1>
+        <p>Отметьте отсутствующих и выберите дежурных за один клик.</p>
+      </div>
+      <button id="resetBtn" type="button">Сбросить очередь и историю</button>
+    </header>
+
+    <section class="layout">
+      <article class="card">
+        <h2>Список студентов</h2>
+        <p class="hint">Галочка означает «отсутствует». Эти студенты остаются на своих местах в очереди.</p>
+        <div id="studentList" class="student-list"></div>
+
+        <div class="actions">
+          <button id="selectBtn" type="button">Выбрать дежурных</button>
+          <button id="infoBtn" type="button">Как работает алгоритм</button>
+        </div>
+      </article>
+
+      <article class="card">
+        <h2>Текущая очередь</h2>
+        <div id="queueView" class="queue-list"></div>
+
+        <h2 style="margin-top: 16px;">История</h2>
+        <div id="historyView" class="history-list"></div>
+      </article>
+    </section>
+  </main>
+
+  <div class="overlay" id="overlay"></div>
+
+  <section class="modal" id="resultModal" aria-live="polite">
+    <h3>Дежурные сегодня</h3>
+    <div id="bigResult" class="result-big"></div>
+    <p id="smallResult"></p>
+    <button class="close" type="button" onclick="closeResult()">Закрыть</button>
+  </section>
+
+  <section class="modal" id="infoModal">
+    <h3>Как работает алгоритм</h3>
+    <p><strong>Коротко:</strong> система всегда идёт сверху очереди и ищет двух присутствующих студентов.</p>
+    <ul>
+      <li><strong>Шаг 1.</strong> Берём список очереди в текущем порядке (с первого до последнего).</li>
+      <li><strong>Шаг 2.</strong> Пропускаем тех, кто отмечен галочкой как отсутствующий. Они <strong>не сдвигаются</strong> и остаются на своих местах.</li>
+      <li><strong>Шаг 3.</strong> Как только найдено 2 присутствующих — они становятся дежурными на сегодня.</li>
+      <li><strong>Шаг 4.</strong> Эти 2 выбранных студента переносятся в конец очереди, чтобы в следующий раз первыми были другие.</li>
+      <li><strong>Шаг 5.</strong> Результат сохраняется в «Историю» с текущей датой.</li>
+    </ul>
+    <p><strong>Пример:</strong> если в начале очереди 3 человека, и первый отсутствует, то дежурными станут второй и третий. Первый останется в начале, а выбранные уйдут в конец.</p>
+    <button class="close" type="button" onclick="closeInfo()">Понятно</button>
+  </section>
+
+  <script>
+    const students = [
+      "Акопян Армен", "Больбат Вячеслав", "Вильгельм Эмма", "Голуб Анежа",
+      "Жестянников Даниил", "Журавлева Полина", "Изрипова Мадина", "Котельников Дмитрий",
+      "Куликов Константин", "Куракин Евгений", "Левшин Райян", "Леошко Мария",
+      "Никитенко Матвей", "Пилипенко Михаил", "Субботин Илья", "Суздалев Иван",
+      "Сычев Михаил", "Талан Полина", "Тугунчинова Арина", "Морозов Даниил",
+      "Шпаковский Денис", "Ярина Дарья"
+    ];
+
+    if (!localStorage.getItem("queue")) {
+      localStorage.setItem("queue", JSON.stringify(students));
+    }
+    if (!localStorage.getItem("history")) {
+      localStorage.setItem("history", JSON.stringify([]));
+    }
+
+    function renderStudents() {
+      const container = document.getElementById("studentList");
+      container.innerHTML = "";
+
+      students.forEach((name) => {
+        const item = document.createElement("div");
+        item.className = "student-item";
+        item.innerHTML = `
+          <label>
+            <span>${name}</span>
+            <input type="checkbox" value="${name}" aria-label="${name}: отсутствует" />
+          </label>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderQueue(queue) {
+      const container = document.getElementById("queueView");
+      container.innerHTML = "";
+
+      if (!queue.length) {
+        container.innerHTML = '<p class="empty">Очередь пуста.</p>';
+        return;
+      }
+
+      for (let i = 0; i < queue.length; i += 2) {
+        const pair = document.createElement("div");
+        pair.className = "queue-pair";
+        pair.innerHTML = `<span>${queue[i] || ""}</span><span>${queue[i + 1] || ""}</span>`;
+        container.appendChild(pair);
+      }
+    }
+
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem("history"));
+      const container = document.getElementById("historyView");
+      container.innerHTML = "";
+
+      if (!history.length) {
+        container.innerHTML = '<p class="empty">История пока пустая.</p>';
+        return;
+      }
+
+      history.forEach((entry) => {
+        const row = document.createElement("div");
+        row.className = "history-item";
+        row.innerText = `${entry.date} — ${entry.duty.join(" и ")}`;
+        container.appendChild(row);
+      });
+    }
+
+    function getAbsent() {
+      return Array.from(document.querySelectorAll("input:checked")).map((x) => x.value);
+    }
+
+    // Алгоритм сохранён без изменений
+    function selectDuty(queue, absent) {
+      const selected = [];
+      let newQueue = [];
+      const moved = [];
+
+      for (let i = 0; i < queue.length; i++) {
+        const s = queue[i];
+
+        if (selected.length < 2) {
+          if (!absent.includes(s)) {
+            selected.push(s);
+            moved.push(s);
+          } else {
+            newQueue.push(s);
+          }
+        } else {
+          newQueue.push(s);
+        }
+      }
+
+      newQueue = newQueue.concat(moved);
+      return { selected, newQueue };
+    }
+
+    function saveHistory(selected) {
+      const history = JSON.parse(localStorage.getItem("history"));
+      const date = new Date().toLocaleDateString("ru-RU");
+
+      history.unshift({
+        date,
+        duty: selected
+      });
+
+      localStorage.setItem("history", JSON.stringify(history));
+    }
+
+    document.getElementById("selectBtn").onclick = () => {
+      const queue = JSON.parse(localStorage.getItem("queue"));
+      const absent = getAbsent();
+      const result = selectDuty(queue, absent);
+
+      localStorage.setItem("queue", JSON.stringify(result.newQueue));
+      saveHistory(result.selected);
+
+      const text = result.selected.join(" и ") || "нет";
+      document.getElementById("bigResult").innerText = text.toUpperCase();
+
+      openResult();
+      renderQueue(result.newQueue);
+      renderHistory();
+
+      document.querySelectorAll("input").forEach((x) => {
+        x.checked = false;
+      });
+    };
+
+    document.getElementById("resetBtn").onclick = () => {
+      if (confirm("Вы точно хотите сбросить очередь и историю?")) {
+        localStorage.clear();
+        location.reload();
+      }
+    };
+
+    const overlay = document.getElementById("overlay");
+
+    function openResult() {
+      overlay.style.display = "block";
+      document.getElementById("resultModal").style.display = "block";
+    }
+
+    function closeResult() {
+      overlay.style.display = "none";
+      document.getElementById("resultModal").style.display = "none";
+    }
+
+    document.getElementById("infoBtn").onclick = () => {
+      overlay.style.display = "block";
+      document.getElementById("infoModal").style.display = "block";
+    };
+
+    function closeInfo() {
+      overlay.style.display = "none";
+      document.getElementById("infoModal").style.display = "none";
+    }
+
+    overlay.onclick = () => {
+      closeResult();
+      closeInfo();
+    };
+
+    renderStudents();
+    renderQueue(JSON.parse(localStorage.getItem("queue")));
+    renderHistory();
+  </script>
+</body>
+</html>
