@@ -449,7 +449,6 @@
 
       const text = result.selected.join(" и ") || "нет";
       document.getElementById("bigResult").innerText = text.toUpperCase();
-      document.getElementById("smallResult").innerText = text;
 
       openResult();
       renderQueue(result.newQueue);
