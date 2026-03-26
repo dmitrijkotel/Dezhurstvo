@@ -265,6 +265,29 @@
       color: #0f172a;
     }
 
+    #authModal .auth-content {
+      display: grid;
+      gap: 10px;
+      text-align: left;
+    }
+
+    #authModal input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 14px;
+    }
+
+    #authSubmitBtn {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    #authSubmitBtn:hover {
+      background: var(--primary-hover);
+    }
+
     @media (max-width: 860px) {
       .layout {
         grid-template-columns: 1fr;
@@ -337,6 +360,15 @@
     <button class="close" type="button" onclick="closeInfo()">Понятно</button>
   </section>
 
+  <section class="modal" id="authModal" aria-live="polite">
+    <h3>Стой! Кто идёт?</h3>
+    <div class="auth-content">
+      <p>Введите пароль для доступа к данным дежурства.</p>
+      <input id="authPasswordInput" type="password" placeholder="Введите пароль" autocomplete="current-password" />
+      <button id="authSubmitBtn" type="button">Войти</button>
+    </div>
+  </section>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
     import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
@@ -364,6 +396,9 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
+    const AUTH_KEY = "dutyAuthGranted";
+    const AUTH_PASSWORD = "22-46";
+    let isAuthorized = false;
 
     isSupported().then((supported) => {
       if (supported) {
@@ -521,6 +556,11 @@
     }
 
     document.getElementById("selectBtn").onclick = async () => {
+      if (!isAuthorized) {
+        openAuthModal();
+        return;
+      }
+
       const state = await loadState();
       const absent = getAbsent();
       const result = selectDuty(state.queue, absent);
@@ -537,6 +577,7 @@
 
       const text = result.selected.join(" и ") || "нет";
       document.getElementById("bigResult").innerText = text.toUpperCase();
+      document.getElementById("smallResult").innerText = text;
 
       openResult();
       renderQueue(result.newQueue);
@@ -548,10 +589,19 @@
     };
 
     document.getElementById("undoBtn").onclick = async () => {
+      if (!isAuthorized) {
+        openAuthModal();
+        return;
+      }
       await tryUndoLastSelection();
     };
 
     document.getElementById("resetBtn").onclick = async () => {
+      if (!isAuthorized) {
+        openAuthModal();
+        return;
+      }
+
       if (!confirm("Вы точно хотите сбросить очередь и историю?")) {
         return;
       }
@@ -571,6 +621,9 @@
     };
 
     const overlay = document.getElementById("overlay");
+    const authModal = document.getElementById("authModal");
+    const authPasswordInput = document.getElementById("authPasswordInput");
+    const authSubmitBtn = document.getElementById("authSubmitBtn");
 
     function openResult() {
       overlay.style.display = "block";
@@ -596,13 +649,62 @@
 
     window.closeInfo = closeInfo;
 
+    function openAuthModal() {
+      overlay.style.display = "block";
+      authModal.style.display = "block";
+      authPasswordInput.focus();
+    }
+
+    function closeAuthModal() {
+      authModal.style.display = "none";
+      if (document.getElementById("resultModal").style.display !== "block" &&
+          document.getElementById("infoModal").style.display !== "block") {
+        overlay.style.display = "none";
+      }
+    }
+
+    async function handleAuth() {
+      const enteredPassword = authPasswordInput.value.trim();
+      if (enteredPassword !== AUTH_PASSWORD) {
+        alert("Неверный пароль.");
+        authPasswordInput.value = "";
+        authPasswordInput.focus();
+        return;
+      }
+
+      localStorage.setItem(AUTH_KEY, "1");
+      isAuthorized = true;
+      closeAuthModal();
+      authPasswordInput.value = "";
+      await initializeState();
+    }
+
+    authSubmitBtn.onclick = async () => {
+      await handleAuth();
+    };
+
+    authPasswordInput.addEventListener("keydown", async (event) => {
+      if (event.key === "Enter") {
+        await handleAuth();
+      }
+    });
+
     overlay.onclick = () => {
+      if (authModal.style.display === "block") {
+        return;
+      }
       closeResult();
       closeInfo();
     };
 
     renderStudents();
-    initializeState();
+
+    if (localStorage.getItem(AUTH_KEY) === "1") {
+      isAuthorized = true;
+      initializeState();
+    } else {
+      openAuthModal();
+    }
   </script>
 </body>
 </html>
