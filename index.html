@@ -337,7 +337,11 @@
     <button class="close" type="button" onclick="closeInfo()">Понятно</button>
   </section>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+    import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
+    import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+
     const students = [
       "Акопян Армен", "Больбат Вячеслав", "Вильгельм Эмма", "Голуб Анежа",
       "Жестянников Даниил", "Журавлева Полина", "Изрипова Мадина", "Котельников Дмитрий",
@@ -347,12 +351,32 @@
       "Шпаковский Денис", "Ярина Дарья"
     ];
 
-    if (!localStorage.getItem("queue")) {
-      localStorage.setItem("queue", JSON.stringify(students));
-    }
-    if (!localStorage.getItem("history")) {
-      localStorage.setItem("history", JSON.stringify([]));
-    }
+    const firebaseConfig = {
+      apiKey: "AIzaSyBfwQoTvzz1fBPD4aSxCF5s6hy0tjHEbfo",
+      authDomain: "dezhurstvo-add43.firebaseapp.com",
+      databaseURL: "https://dezhurstvo-add43-default-rtdb.firebaseio.com",
+      projectId: "dezhurstvo-add43",
+      storageBucket: "dezhurstvo-add43.firebasestorage.app",
+      messagingSenderId: "61679873706",
+      appId: "1:61679873706:web:91b499c7e5f389b2292ad3",
+      measurementId: "G-NC1ETFVR84"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    isSupported().then((supported) => {
+      if (supported) {
+        getAnalytics(app);
+      }
+    });
+
+    const stateRef = ref(db, "dutyState");
+    const defaultState = {
+      queue: students,
+      history: [],
+      lastState: null
+    };
 
     function renderStudents() {
       const container = document.getElementById("studentList");
@@ -388,8 +412,7 @@
       }
     }
 
-    function renderHistory() {
-      const history = JSON.parse(localStorage.getItem("history"));
+    function renderHistory(history) {
       const container = document.getElementById("historyView");
       container.innerHTML = "";
 
@@ -435,75 +458,100 @@
       return { selected, newQueue };
     }
 
-    function saveHistory(selected) {
-      const history = JSON.parse(localStorage.getItem("history"));
+    function buildHistory(history, selected) {
       const date = new Date().toLocaleDateString("ru-RU");
+      const newHistory = [...history];
 
-      history.unshift({
+      newHistory.unshift({
         date,
         duty: selected
       });
 
-      if (history.length > 10) {
-        history.length = 10;
+      if (newHistory.length > 10) {
+        newHistory.length = 10;
       }
 
-      localStorage.setItem("history", JSON.stringify(history));
+      return newHistory;
     }
 
-    function saveLastState(queue, history) {
-      localStorage.setItem("lastState", JSON.stringify({ queue, history }));
+    async function loadState() {
+      const snapshot = await get(stateRef);
+
+      if (!snapshot.exists()) {
+        await set(stateRef, defaultState);
+        return { ...defaultState };
+      }
+
+      const data = snapshot.val();
+      return {
+        queue: Array.isArray(data.queue) ? data.queue : [...students],
+        history: Array.isArray(data.history) ? data.history : [],
+        lastState: data.lastState ?? null
+      };
     }
 
-    function tryUndoLastSelection() {
-      const raw = localStorage.getItem("lastState");
-      if (!raw) {
+    async function initializeState() {
+      const state = await loadState();
+      renderQueue(state.queue);
+      renderHistory(state.history);
+    }
+
+    async function tryUndoLastSelection() {
+      const state = await loadState();
+
+      if (!state.lastState) {
         alert("Нет сохранённого последнего дежурства для отмены.");
         return;
       }
 
-      const lastState = JSON.parse(raw);
-      if (!Array.isArray(lastState.queue) || !Array.isArray(lastState.history)) {
+      if (!Array.isArray(state.lastState.queue) || !Array.isArray(state.lastState.history)) {
         alert("Не удалось восстановить предыдущее состояние.");
         return;
       }
 
-      localStorage.setItem("queue", JSON.stringify(lastState.queue));
-      localStorage.setItem("history", JSON.stringify(lastState.history));
-      localStorage.removeItem("lastState");
+      await update(stateRef, {
+        queue: state.lastState.queue,
+        history: state.lastState.history,
+        lastState: null
+      });
 
-      renderQueue(lastState.queue);
-      renderHistory();
+      renderQueue(state.lastState.queue);
+      renderHistory(state.lastState.history);
       alert("Последнее дежурство отменено.");
     }
 
-    document.getElementById("selectBtn").onclick = () => {
-      const queue = JSON.parse(localStorage.getItem("queue"));
-      const historyBefore = JSON.parse(localStorage.getItem("history"));
+    document.getElementById("selectBtn").onclick = async () => {
+      const state = await loadState();
       const absent = getAbsent();
-      const result = selectDuty(queue, absent);
+      const result = selectDuty(state.queue, absent);
+      const newHistory = buildHistory(state.history, result.selected);
 
-      saveLastState(queue, historyBefore);
-      localStorage.setItem("queue", JSON.stringify(result.newQueue));
-      saveHistory(result.selected);
+      await update(stateRef, {
+        lastState: {
+          queue: state.queue,
+          history: state.history
+        },
+        queue: result.newQueue,
+        history: newHistory
+      });
 
       const text = result.selected.join(" и ") || "нет";
       document.getElementById("bigResult").innerText = text.toUpperCase();
 
       openResult();
       renderQueue(result.newQueue);
-      renderHistory();
+      renderHistory(newHistory);
 
       document.querySelectorAll("input").forEach((x) => {
         x.checked = false;
       });
     };
 
-    document.getElementById("undoBtn").onclick = () => {
-      tryUndoLastSelection();
+    document.getElementById("undoBtn").onclick = async () => {
+      await tryUndoLastSelection();
     };
 
-    document.getElementById("resetBtn").onclick = () => {
+    document.getElementById("resetBtn").onclick = async () => {
       if (!confirm("Вы точно хотите сбросить очередь и историю?")) {
         return;
       }
@@ -518,7 +566,7 @@
         return;
       }
 
-      localStorage.clear();
+      await set(stateRef, defaultState);
       location.reload();
     };
 
@@ -534,6 +582,8 @@
       document.getElementById("resultModal").style.display = "none";
     }
 
+    window.closeResult = closeResult;
+
     document.getElementById("infoBtn").onclick = () => {
       overlay.style.display = "block";
       document.getElementById("infoModal").style.display = "block";
@@ -544,14 +594,15 @@
       document.getElementById("infoModal").style.display = "none";
     }
 
+    window.closeInfo = closeInfo;
+
     overlay.onclick = () => {
       closeResult();
       closeInfo();
     };
 
     renderStudents();
-    renderQueue(JSON.parse(localStorage.getItem("queue")));
-    renderHistory();
+    initializeState();
   </script>
 </body>
 </html>
