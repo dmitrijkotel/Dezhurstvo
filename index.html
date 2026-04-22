@@ -3,626 +3,1036 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Выбор дежурных</title>
+  <title>Дежурные — 22-46</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
   <style>
-    @import url("https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;600;700&display=swap");
-
     :root {
-      --bg: #f4f4f0;
-      --fg: #111111;
-      --accent: #e61919;
-      --line: #111111;
-      --muted: #3a3a3a;
-      --panel: #f4f4f0;
-      --scan: rgba(17, 17, 17, 0.05);
+      --bg: #0f1117;
+      --surface: #181c27;
+      --surface2: #1e2333;
+      --border: #2a3048;
+      --border-light: #323a56;
+      --fg: #e8ecf5;
+      --fg-muted: #6b7599;
+      --fg-dim: #3d4566;
+      --accent: #6c8fff;
+      --accent-glow: rgba(108,143,255,0.18);
+      --accent2: #ff6b8a;
+      --accent2-glow: rgba(255,107,138,0.15);
+      --green: #4ade80;
+      --green-glow: rgba(74,222,128,0.12);
+      --amber: #fbbf24;
+      --radius: 14px;
+      --radius-sm: 8px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      margin: 0;
-      min-height: 100dvh;
       background: var(--bg);
       color: var(--fg);
-      font-family: "JetBrains Mono", monospace;
-      letter-spacing: 0.04em;
-      line-height: 1.4;
-      position: relative;
+      font-family: 'Onest', sans-serif;
+      min-height: 100dvh;
+      line-height: 1.5;
+      overflow-x: hidden;
     }
 
+    /* Ambient background */
     body::before {
-      content: "";
+      content: '';
       position: fixed;
-      inset: 0;
+      top: -30%;
+      left: -20%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(ellipse, rgba(108,143,255,0.07) 0%, transparent 70%);
       pointer-events: none;
-      opacity: 0.25;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        var(--scan) 2px,
-        var(--scan) 4px
-      );
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -10%;
+      width: 50%;
+      height: 50%;
+      background: radial-gradient(ellipse, rgba(255,107,138,0.05) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
     }
 
     .app {
-      max-width: 1400px;
+      position: relative;
+      z-index: 1;
+      max-width: 1360px;
       margin: 0 auto;
-      padding: 16px;
-      display: grid;
-      gap: 1px;
-      background: var(--line);
+      padding: 24px 20px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
 
-    .hero,
-    .main-grid,
-    .footer-meta {
-      background: var(--panel);
+    /* ── HEADER ── */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 28px 32px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      flex-wrap: wrap;
     }
 
-    .hero {
-      display: grid;
-      grid-template-columns: 1.45fr 1fr;
-      gap: 1px;
-      background: var(--line);
-    }
+    .header-left { display: flex; flex-direction: column; gap: 8px; }
 
-    .hero-block,
-    .hero-side {
-      background: var(--panel);
-      padding: 18px;
-      min-height: 220px;
-      display: grid;
-      align-content: start;
-      gap: 14px;
-    }
-
-    .kicker {
-      margin: 0;
+    .header-eyebrow {
       font-size: 11px;
-      font-weight: 700;
-      color: var(--muted);
-    }
-
-    .hero h1 {
-      margin: 0;
-      font-family: "Archivo Black", sans-serif;
-      font-size: clamp(2.8rem, 10vw, 9rem);
-      line-height: 0.86;
-      letter-spacing: -0.045em;
-      max-width: 9ch;
-      word-break: break-word;
+      font-weight: 600;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-    }
-
-    .hero-note {
-      margin: 0;
-      font-size: 12px;
-      line-height: 1.5;
-      max-width: 62ch;
-      color: var(--muted);
-      text-transform: none;
-    }
-
-    .stamp {
-      border: 2px solid var(--accent);
       color: var(--accent);
-      padding: 8px 10px;
-      display: inline-block;
-      width: fit-content;
-      font-weight: 700;
-      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .header-eyebrow::before {
+      content: '';
+      width: 20px;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px;
     }
 
-    .meta-list {
-      display: grid;
-      gap: 8px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .meta-list li {
-      border-top: 1px solid var(--line);
-      padding-top: 8px;
-    }
-
-    .cross {
-      display: grid;
-      place-items: center;
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--accent);
-      border: 2px solid var(--line);
-      width: 44px;
-      height: 44px;
-    }
-
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1.1fr 0.9fr;
-      gap: 1px;
-      background: var(--line);
-    }
-
-    .panel {
-      background: var(--panel);
-      padding: 16px;
-      display: grid;
-      align-content: start;
-      gap: 10px;
-      min-height: 520px;
-    }
-
-    .panel-head {
-      border-bottom: 2px solid var(--line);
-      padding-bottom: 10px;
-      display: grid;
-      gap: 6px;
-    }
-
-    .panel h2 {
-      margin: 0;
-      font-family: "Archivo Black", sans-serif;
-      font-size: clamp(1.3rem, 3vw, 2.5rem);
-      line-height: 0.98;
+    .header h1 {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(1.7rem, 4.5vw, 3.2rem);
+      font-weight: 900;
+      line-height: 1.05;
       letter-spacing: -0.03em;
-      text-transform: uppercase;
-      overflow-wrap: anywhere;
+      background: linear-gradient(135deg, #e8ecf5 30%, #6c8fff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .hint {
-      margin: 0;
-      font-size: 11px;
-      line-height: 1.45;
-      color: var(--muted);
-      text-transform: uppercase;
+    .header-note {
+      font-size: 13px;
+      color: var(--fg-muted);
+      max-width: 44ch;
     }
 
-    .state-bar {
-      margin: 0;
-      font-size: 11px;
-      padding: 8px;
-      border: 1px solid var(--line);
-      display: none;
+    .header-right { display: flex; align-items: center; }
+
+    /* ── BUTTONS ── */
+    button {
+      font-family: 'Onest', sans-serif;
+      cursor: pointer;
+      border: none;
+      outline: none;
+      transition: all 0.18s ease;
     }
 
-    .state-bar.error {
-      display: block;
-      border-color: var(--accent);
-      color: var(--accent);
-      font-weight: 700;
-    }
-
-    .student-list {
-      border: 1px solid var(--line);
-      max-height: 420px;
-      overflow-y: auto;
-      background: var(--panel);
-    }
-
-    .student-item {
-      border-bottom: 1px solid var(--line);
-    }
-
-    .student-item:last-child {
-      border-bottom: 0;
-    }
-
-    .student-item label {
-      display: grid;
-      grid-template-columns: 1fr auto;
+    .btn {
+      display: inline-flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 10px;
+      padding: 11px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0f1117;
+    }
+    .btn-primary:hover { background: #859fff; transform: translateY(-1px); box-shadow: 0 6px 24px rgba(108,143,255,0.35); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--fg-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--border-light); color: var(--fg); background: var(--surface2); }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--accent2);
+      border: 1px solid rgba(255,107,138,0.3);
+    }
+    .btn-danger:hover { background: var(--accent2-glow); border-color: var(--accent2); }
+
+    .btn-success {
+      background: var(--green);
+      color: #0f1117;
+    }
+    .btn-success:hover { background: #6ee7a0; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(74,222,128,0.3); }
+
+    .btn-sm {
+      padding: 6px 12px;
       font-size: 12px;
-      cursor: pointer;
-      line-height: 1.35;
-      text-transform: none;
-    }
-
-    .student-item input[type="checkbox"] {
-      width: 16px;
-      height: 16px;
-      accent-color: var(--accent);
-      cursor: pointer;
-    }
-
-    .controls {
-      display: grid;
-      gap: 1px;
-      background: var(--line);
-      border: 1px solid var(--line);
-    }
-
-    button {
-      border: 0;
-      background: var(--panel);
-      color: var(--fg);
-      font-family: "JetBrains Mono", monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      padding: 12px 10px;
-      cursor: pointer;
-      transition: transform 0.06s linear, background-color 0.08s linear, color 0.08s linear;
-      line-height: 1.3;
-      white-space: normal;
-      overflow-wrap: anywhere;
-    }
-
-    button:hover {
-      background: var(--fg);
-      color: var(--panel);
-    }
-
-    button:active {
-      transform: translateY(1px) scale(0.99);
-    }
-
-    button:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: -2px;
+      border-radius: 6px;
     }
 
     #resetBtn {
-      border: 2px solid var(--accent);
-      color: var(--accent);
-      font-weight: 700;
+      background: transparent;
+      color: var(--accent2);
+      border: 1px solid rgba(255,107,138,0.3);
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
     }
+    #resetBtn:hover { background: var(--accent2-glow); border-color: var(--accent2); }
 
-    #resetBtn:hover {
-      background: var(--accent);
-      color: var(--panel);
-    }
-
-    .subhead {
-      margin: 8px 0 0;
-      font-size: 11px;
-      color: var(--muted);
-      line-height: 1.45;
-      text-transform: uppercase;
-    }
-
-    .queue-loading {
-      display: none;
-      gap: 1px;
-      background: var(--line);
-    }
-
-    .loader-line {
-      height: 36px;
-      background:
-        linear-gradient(90deg, #f4f4f0 0%, #dcdcd9 50%, #f4f4f0 100%);
-      background-size: 220% 100%;
-      animation: scan 1.1s linear infinite;
-    }
-
-    .queue-list,
-    .history-list {
+    /* ── MAIN GRID ── */
+    .main-grid {
       display: grid;
-      gap: 1px;
-      background: var(--line);
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 20px;
+      align-items: start;
     }
 
-    .queue-row,
-    .history-item,
-    .empty-state {
-      background: var(--panel);
-      font-size: 11px;
-      line-height: 1.35;
-      padding: 8px 10px;
+    /* ── PANEL / CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
     }
+
+    .card-header {
+      padding: 20px 22px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--fg);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title .icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .icon-blue { background: var(--accent-glow); }
+    .icon-green { background: var(--green-glow); }
+    .icon-pink { background: var(--accent2-glow); }
+    .icon-amber { background: rgba(251,191,36,0.12); }
+
+    .card-subtitle {
+      font-size: 11.5px;
+      color: var(--fg-muted);
+      padding-left: 38px;
+    }
+
+    .card-body { padding: 16px 22px; }
+
+    /* ── STATE BAR ── */
+    .state-bar {
+      margin: 0 22px 12px;
+      font-size: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      display: none;
+    }
+    .state-bar.error {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,107,138,0.1);
+      border: 1px solid rgba(255,107,138,0.3);
+      color: var(--accent2);
+      font-weight: 600;
+    }
+
+    /* ── STUDENT LIST ── */
+    .student-list {
+      max-height: 420px;
+      overflow-y: auto;
+      margin: 0 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .student-list::-webkit-scrollbar { width: 4px; }
+    .student-list::-webkit-scrollbar-track { background: transparent; }
+    .student-list::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
+
+    .student-item {
+      border-radius: 8px;
+      overflow: hidden;
+      transition: background 0.12s;
+    }
+    .student-item:hover { background: var(--surface2); }
+
+    .student-item label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 12px;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--fg);
+      user-select: none;
+    }
+
+    .student-item input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--border-light);
+      border-radius: 5px;
+      background: var(--surface2);
+      cursor: pointer;
+      flex-shrink: 0;
+      position: relative;
+      transition: all 0.15s;
+    }
+    .student-item input[type="checkbox"]:checked {
+      background: var(--accent2);
+      border-color: var(--accent2);
+    }
+    .student-item input[type="checkbox"]:checked::after {
+      content: '✕';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: #fff;
+      line-height: 18px;
+      text-align: center;
+      width: 100%;
+    }
+    .student-item:has(input:checked) label { color: var(--fg-muted); text-decoration: line-through; }
+    .student-item:has(input:checked) { background: rgba(255,107,138,0.05); }
+
+    .absent-badge {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent2);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .student-item:has(input:checked) .absent-badge { opacity: 1; }
+
+    /* ── CONTROLS ── */
+    .controls {
+      padding: 16px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    #selectBtn {
+      background: linear-gradient(135deg, #6c8fff, #a78bfa);
+      color: #fff;
+      font-family: 'Onest', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 14px;
+      border-radius: 10px;
+      letter-spacing: 0.03em;
+      border: none;
+      box-shadow: 0 4px 20px rgba(108,143,255,0.25);
+    }
+    #selectBtn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(108,143,255,0.4); }
+    #selectBtn:active { transform: translateY(0); }
+
+    .controls-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    #undoBtn, #infoBtn {
+      font-family: 'Onest', sans-serif;
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: var(--surface2);
+      color: var(--fg-muted);
+      border: 1px solid var(--border);
+    }
+    #undoBtn:hover, #infoBtn:hover { background: var(--border); color: var(--fg); border-color: var(--border-light); }
+
+    /* ── RIGHT COLUMN ── */
+    .right-col { display: flex; flex-direction: column; gap: 16px; }
+
+    /* ── CURRENT DUTY CARD ── */
+    .duty-card {
+      background: linear-gradient(135deg, var(--surface) 0%, rgba(108,143,255,0.05) 100%);
+      border: 1px solid rgba(108,143,255,0.2);
+    }
+
+    .duty-date {
+      font-size: 11.5px;
+      color: var(--fg-muted);
+      padding-left: 38px;
+    }
+
+    .duty-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .duty-person {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      transition: border-color 0.15s;
+    }
+    .duty-person:hover { border-color: var(--border-light); }
+
+    .duty-person-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .duty-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent) 0%, #a78bfa 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .duty-name { font-size: 13.5px; font-weight: 600; }
+
+    .replace-btn {
+      font-family: 'Onest', sans-serif;
+      background: transparent;
+      border: 1px solid var(--border-light);
+      color: var(--fg-muted);
+      padding: 5px 12px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border-radius: 6px;
+    }
+    .replace-btn:hover { border-color: var(--accent2); color: var(--accent2); background: var(--accent2-glow); }
+
+    /* ── QUEUE ── */
+    .queue-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .queue-list::-webkit-scrollbar { width: 3px; }
+    .queue-list::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
 
     .queue-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1px;
-      background: var(--line);
-      padding: 0;
+      grid-template-columns: 28px 1fr 1fr;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      color: var(--fg-muted);
+      transition: background 0.1s;
+    }
+    .queue-row:hover { background: var(--surface2); }
+    .queue-row:first-child { color: var(--fg); background: var(--surface2); }
+    .queue-row:first-child .q-num { color: var(--accent); font-weight: 700; }
+
+    .q-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--fg-dim);
+      text-align: right;
     }
 
-    .queue-row samp {
-      margin: 0;
-      padding: 9px 10px;
-      background: var(--panel);
-      display: block;
-      min-height: 38px;
-      font-size: 11px;
-      line-height: 1.35;
-      text-transform: none;
-      overflow-wrap: anywhere;
+    /* ── HISTORY ── */
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
     }
 
     .history-item {
-      border-left: 2px solid var(--accent);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: var(--surface2);
+      border-left: 3px solid var(--accent);
+      font-size: 12.5px;
     }
+    .history-item:first-child { border-left-color: var(--green); }
+    .history-date { font-size: 11px; color: var(--fg-muted); font-weight: 500; }
+    .history-names { font-weight: 600; color: var(--fg); }
 
-    .footer-meta {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 1px;
-      background: var(--line);
-      font-size: 10px;
+    /* ── LOADER ── */
+    .queue-loading { display: none; flex-direction: column; gap: 6px; }
+    .loader-line {
+      height: 32px;
+      border-radius: 7px;
+      background: linear-gradient(90deg, var(--surface) 0%, var(--surface2) 50%, var(--surface) 100%);
+      background-size: 220% 100%;
+      animation: shimmer 1.3s ease infinite;
     }
-
-    .footer-meta div {
-      background: var(--panel);
-      padding: 8px 10px;
-    }
-
-    .overlay {
-      position: fixed;
-      inset: 0;
-      display: none;
-      background: rgba(17, 17, 17, 0.55);
-      z-index: 40;
-    }
-
-    .modal {
-      position: fixed;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      width: min(94vw, 620px);
-      border: 2px solid var(--line);
-      background: var(--panel);
-      padding: 14px;
-      display: none;
-      z-index: 41;
-      display: none;
-    }
-
-    .modal h3 {
-      margin: 0;
-      padding-bottom: 8px;
-      border-bottom: 2px solid var(--line);
-      font-family: "Archivo Black", sans-serif;
-      font-size: clamp(1.4rem, 3vw, 2.5rem);
-      line-height: 0.92;
-      letter-spacing: -0.03em;
-    }
-
-    .result-big {
-      margin: 10px 0;
-      font-family: "Archivo Black", sans-serif;
-      font-size: clamp(1.7rem, 6vw, 4.5rem);
-      line-height: 0.88;
-      letter-spacing: -0.04em;
-      color: var(--accent);
-    }
-
-    .modal p,
-    .modal li {
-      margin: 0;
-      font-size: 11px;
-      line-height: 1.5;
-    }
-
-    .modal ul {
-      margin: 10px 0;
-      padding-left: 18px;
-      display: grid;
-      gap: 5px;
-    }
-
-    .modal .close {
-      margin-top: 10px;
-      border: 1px solid var(--line);
-    }
-
-    #authModal .auth-grid {
-      display: grid;
-      gap: 8px;
-      margin-top: 10px;
-    }
-
-    #authModal label {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    #authModal input {
-      border: 1px solid var(--line);
-      padding: 10px;
-      font-family: "JetBrains Mono", monospace;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      background: var(--panel);
-      color: var(--fg);
-    }
-
-    #authError {
-      margin: 0;
-      border: 1px solid var(--accent);
-      color: var(--accent);
-      padding: 8px;
-      font-size: 11px;
-      display: none;
-      font-weight: 700;
-    }
-
-    #authError.visible {
-      display: block;
-    }
-
-    @keyframes scan {
+    @keyframes shimmer {
       from { background-position: 130% 0; }
       to { background-position: -130% 0; }
     }
 
-    @media (max-width: 980px) {
-      .hero,
-      .main-grid,
-      .footer-meta {
-        grid-template-columns: 1fr;
-      }
-
-      .hero-block,
-      .hero-side {
-        min-height: auto;
-      }
-
-      .hero h1 {
-        max-width: 12ch;
-        font-size: clamp(2rem, 14vw, 3.2rem);
-        line-height: 0.9;
-      }
-
-      .panel h2 {
-        font-size: clamp(1.2rem, 8vw, 1.8rem);
-      }
-
-      .panel {
-        min-height: auto;
-      }
-
-      .student-list {
-        max-height: 52dvh;
-      }
-
-      .queue-row samp {
-        min-height: 0;
-      }
-
-      .footer-meta {
-        font-size: 11px;
-      }
-
-      .modal {
-        width: min(96vw, 620px);
-        max-height: 88dvh;
-        overflow: auto;
-      }
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      text-align: center;
+      padding: 24px;
+      color: var(--fg-dim);
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .empty-state::before {
+      content: '◌';
+      font-size: 22px;
+      color: var(--border-light);
     }
 
-    @media (max-width: 560px) {
-      .app {
-        padding: 10px;
-      }
+    /* ── OVERLAY ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      display: none;
+      background: rgba(10,12,20,0.75);
+      backdrop-filter: blur(6px);
+      z-index: 40;
+    }
 
-      .hero-block,
-      .hero-side,
-      .panel {
-        padding: 12px;
-      }
+    /* ── MODALS ── */
+    .modal {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      width: min(95vw, 540px);
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: 18px;
+      padding: 28px;
+      display: none;
+      z-index: 41;
+      max-height: 90dvh;
+      overflow-y: auto;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5);
+      opacity: 0;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+    .modal.open {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
 
-      .kicker,
-      .hint,
-      .subhead,
-      .empty-state,
-      .history-item,
-      .queue-row samp,
-      button,
-      #authModal input,
-      #authModal label {
-        font-size: 10px;
-      }
+    .modal-header {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
 
-      .controls button {
-        padding: 10px 8px;
-      }
+    .modal-eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
 
-      .result-big {
-        font-size: clamp(1.4rem, 12vw, 2rem);
-        line-height: 1;
-      }
+    .modal h3 {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(1.1rem, 3vw, 1.5rem);
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+    }
+
+    .modal-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .modal .close-btn {
+      font-family: 'Onest', sans-serif;
+      background: var(--surface2);
+      color: var(--fg-muted);
+      border: 1px solid var(--border);
+      padding: 11px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      width: 100%;
+    }
+    .modal .close-btn:hover { color: var(--fg); border-color: var(--border-light); }
+
+    /* RESULT MODAL */
+    .result-names {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(1.3rem, 4vw, 2rem);
+      font-weight: 900;
+      background: linear-gradient(135deg, #e8ecf5, #6c8fff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .result-sub { font-size: 13px; color: var(--fg-muted); }
+
+    .result-confetti {
+      font-size: 36px;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    #confirmSelectBtn {
+      background: linear-gradient(135deg, #6c8fff, #a78bfa);
+      color: #fff;
+      font-family: 'Onest', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 13px;
+      border-radius: 9px;
+      border: none;
+      width: 100%;
+      box-shadow: 0 4px 16px rgba(108,143,255,0.3);
+    }
+    #confirmSelectBtn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(108,143,255,0.4); }
+
+    /* INFO MODAL */
+    .info-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13.5px;
+    }
+    .info-step:last-child { border-bottom: none; }
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--accent-glow);
+      border: 1px solid rgba(108,143,255,0.3);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .info-text { color: var(--fg-muted); line-height: 1.6; }
+    .info-text strong { color: var(--fg); font-weight: 600; }
+
+    /* AUTH MODAL */
+    .auth-label { font-size: 13px; font-weight: 600; margin-bottom: 6px; display: block; color: var(--fg-muted); }
+    .auth-input-wrap { position: relative; }
+    #authPasswordInput {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border-light);
+      border-radius: 9px;
+      padding: 13px 16px;
+      font-family: 'Onest', sans-serif;
+      font-size: 14px;
+      color: var(--fg);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #authPasswordInput:focus { border-color: var(--accent); }
+    #authPasswordInput::placeholder { color: var(--fg-dim); }
+    #authError {
+      background: rgba(255,107,138,0.1);
+      border: 1px solid rgba(255,107,138,0.3);
+      color: var(--accent2);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      font-weight: 600;
+      display: none;
+      margin-top: 10px;
+    }
+    #authError.visible { display: flex; align-items: center; gap: 8px; }
+    #authSubmitBtn {
+      background: linear-gradient(135deg, #6c8fff, #a78bfa);
+      color: #fff;
+      font-family: 'Onest', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 13px;
+      border-radius: 9px;
+      border: none;
+      width: 100%;
+      margin-top: 14px;
+      box-shadow: 0 4px 16px rgba(108,143,255,0.25);
+    }
+    #authSubmitBtn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(108,143,255,0.4); }
+
+    /* REPLACE MODAL */
+    .replace-target {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .replace-target::before { content: '👤'; }
+
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: border-color 0.15s;
+    }
+    .radio-group label:hover { border-color: var(--border-light); }
+    .radio-group input[type="radio"] { accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
+
+    .replace-section-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--fg-muted);
+      margin-bottom: 8px;
+    }
+
+    .modal-student-list {
+      max-height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 16px;
+    }
+    .modal-student-list::-webkit-scrollbar { width: 3px; }
+    .modal-student-list::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+
+    #confirmReplaceBtn {
+      background: linear-gradient(135deg, #ff6b8a, #f43f5e);
+      color: #fff;
+      font-family: 'Onest', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 13px;
+      border-radius: 9px;
+      border: none;
+      width: 100%;
+      box-shadow: 0 4px 16px rgba(255,107,138,0.2);
+    }
+    #confirmReplaceBtn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,107,138,0.35); }
+
+    /* TAG */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .tag-blue { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(108,143,255,0.2); }
+    .tag-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+    /* COUNT BADGE */
+    .count-badge {
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid rgba(108,143,255,0.2);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+    }
+
+    /* FOOTER */
+    .footer-credit {
+      text-align: center;
+      font-size: 11px;
+      color: var(--fg-dim);
+      padding-top: 8px;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 900px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .header { flex-direction: column; }
+      .controls-row { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .app { padding: 14px 12px 40px; gap: 14px; }
+      .card-body { padding: 14px 16px; }
+      .controls { padding: 14px 16px; }
+      .student-list { margin: 0 16px; }
+      .state-bar { margin: 0 16px 12px; }
+      .header { padding: 20px; }
     }
   </style>
 </head>
 <body>
   <main class="app">
-    <header class="hero">
-      <section class="hero-block">
-        <h1>ВЫБОР ДЕЖУРНЫХ</h1>
-        <p class="hero-note">/// Отметьте отсутствующих. Система выбирает двух присутствующих по очереди и перемещает их в хвост списка без ручного перерасчёта.</p>
-      </section>
-      <aside class="hero-side">
-        <button id="resetBtn" type="button">[ СБРОС ОЧЕРЕДИ + ИСТОРИИ ]</button>
-      </aside>
+
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-left">
+        <div class="header-eyebrow">Колледж · Группа 22-46</div>
+        <h1>Выбор<br>дежурных</h1>
+        <p class="header-note">Отметьте отсутствующих и нажмите «Выбрать». Система автоматически назначит следующую пару.</p>
+      </div>
+      <div class="header-right">
+        <button id="resetBtn" type="button">⟳ Сброс очереди</button>
+      </div>
     </header>
 
-    <section class="main-grid">
-      <article class="panel">
-        <div class="panel-head">
-          <h2>[ СПИСОК СТУДЕНТОВ ]</h2>
-          <p class="hint">[ ГАЛОЧКА = ОТСУТСТВУЕТ ] ОТСУТСТВУЮЩИЕ ОСТАЮТСЯ НА СВОИХ МЕСТАХ.</p>
+    <!-- MAIN GRID -->
+    <div class="main-grid">
+
+      <!-- LEFT: STUDENT LIST -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <div class="icon icon-blue">👥</div>
+            Список студентов
+            <span class="count-badge" id="studentCount">22</span>
+          </div>
+          <div class="card-subtitle">Поставьте галочку напротив отсутствующих</div>
         </div>
 
         <p id="stateError" class="state-bar" aria-live="polite"></p>
+
+        <div style="padding: 12px 22px 8px;">
+          <span class="tag tag-blue"><span class="tag-dot"></span>Отмечено: <span id="absentCount">0</span></span>
+        </div>
+
         <div id="studentList" class="student-list"></div>
 
         <div class="controls">
-          <button id="selectBtn" type="button">>>> ВЫБРАТЬ ДЕЖУРНЫХ <<<</button>
-          <button id="undoBtn" type="button"><<< ОТМЕНИТЬ ПОСЛЕДНЕЕ ДЕЖУРСТВО >>></button>
-          <button id="infoBtn" type="button">[ ДОСЬЕ АЛГОРИТМА ]</button>
+          <button id="selectBtn" type="button">✦ Выбрать дежурных</button>
+          <div class="controls-row">
+            <button id="undoBtn" type="button">↩ Отменить</button>
+            <button id="infoBtn" type="button">ℹ Алгоритм</button>
+          </div>
         </div>
-      </article>
+      </div>
 
-      <article class="panel">
-        <div class="panel-head">
-          <h2>[ ТЕКУЩАЯ ОЧЕРЕДЬ ]</h2>
-          <p class="subhead">[ ТЕКУЩИЙ ПОРЯДОК: 2 ЯЧЕЙКИ В РЯДУ ]</p>
+      <!-- RIGHT COL -->
+      <div class="right-col">
+
+        <!-- CURRENT DUTY -->
+        <div class="card duty-card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="icon icon-green">⭐</div>
+              Сегодня дежурят
+            </div>
+            <div class="duty-date" id="currentDateDisplay"></div>
+          </div>
+          <div class="card-body">
+            <div id="currentDutyContainer"></div>
+          </div>
         </div>
 
-        <div id="queueLoading" class="queue-loading" aria-hidden="true">
-          <div class="loader-line"></div>
-          <div class="loader-line"></div>
-          <div class="loader-line"></div>
+        <!-- QUEUE -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="icon icon-amber">📋</div>
+              Текущая очередь
+            </div>
+            <div class="card-subtitle">По 2 человека в ряду</div>
+          </div>
+          <div class="card-body">
+            <div id="queueLoading" class="queue-loading">
+              <div class="loader-line"></div>
+              <div class="loader-line"></div>
+              <div class="loader-line"></div>
+            </div>
+            <div id="queueView" class="queue-list"></div>
+          </div>
         </div>
-        <div id="queueView" class="queue-list"></div>
 
-        <div class="panel-head" style="margin-top: 12px;">
-          <h2>[ ЖУРНАЛ ИСТОРИИ ]</h2>
-          <p class="subhead">[ ПОСЛЕДНИЕ 10 ЗАПИСЕЙ ]</p>
+        <!-- HISTORY -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="icon icon-pink">📅</div>
+              История
+            </div>
+            <div class="card-subtitle">Последние 10 записей</div>
+          </div>
+          <div class="card-body">
+            <div id="historyView" class="history-list"></div>
+          </div>
         </div>
-        <div id="historyView" class="history-list"></div>
-      </article>
-    </section>
-    <p style="color: #f4f4f0;">DMITRIY KOTELNIKOV. 22-46</p>
+
+      </div>
+    </div>
+
+    <div class="footer-credit">Dmitriy Kotelnikov · 22-46</div>
   </main>
 
+  <!-- OVERLAY -->
   <div class="overlay" id="overlay"></div>
 
-  <section class="modal" id="resultModal" aria-live="polite">
-    <h3>[ ДЕЖУРНЫЕ НАЗНАЧЕНЫ ]</h3>
-    <div id="bigResult" class="result-big"></div>
-    <p id="smallResult"></p>
-    <button class="close" type="button" onclick="closeResult()">[ ЗАКРЫТЬ ]</button>
+  <!-- RESULT MODAL -->
+  <section class="modal" id="resultModal">
+    <div class="modal-header">
+      <div class="modal-eyebrow">Назначение выполнено</div>
+      <h3>Дежурные выбраны</h3>
+    </div>
+    <span class="result-confetti">🎉</span>
+    <div id="bigResult" class="result-names"></div>
+    <p id="smallResult" class="result-sub"></p>
+    <div class="modal-actions">
+      <button class="close-btn" type="button" onclick="closeResult()">Закрыть</button>
+    </div>
   </section>
 
+  <!-- INFO MODAL -->
   <section class="modal" id="infoModal">
-    <h3>[ КАК РАБОТАЕТ АЛГОРИТМ ]</h3>
-    <p><strong>[ КРАТКО ]</strong> СИСТЕМА ПРОХОДИТ ОЧЕРЕДЬ СВЕРХУ ВНИЗ И ВЫБИРАЕТ ПЕРВЫХ ДВУХ ПРИСУТСТВУЮЩИХ.</p>
-    <ul>
-      <li><strong>[ ШАГ 1 ]</strong> БЕРЁТСЯ ТЕКУЩИЙ ПОРЯДОК ОЧЕРЕДИ.</li>
-      <li><strong>[ ШАГ 2 ]</strong> ОТСУТСТВУЮЩИЕ ПРОПУСКАЮТСЯ И ОСТАЮТСЯ НА СВОИХ МЕСТАХ.</li>
-      <li><strong>[ ШАГ 3 ]</strong> ПЕРВЫЕ ДВА ПРИСУТСТВУЮЩИХ СТАНОВЯТСЯ ДЕЖУРНЫМИ.</li>
-      <li><strong>[ ШАГ 4 ]</strong> ВЫБРАННЫЕ СТУДЕНТЫ ПЕРЕМЕЩАЮТСЯ В КОНЕЦ ОЧЕРЕДИ.</li>
-      <li><strong>[ ШАГ 5 ]</strong> РЕЗУЛЬТАТ СОХРАНЯЕТСЯ В ИСТОРИЮ С ТЕКУЩЕЙ ДАТОЙ.</li>
-    </ul>
-    <button class="close" type="button" onclick="closeInfo()">[ ПОНЯТНО ]</button>
+    <div class="modal-header">
+      <div class="modal-eyebrow">Документация</div>
+      <h3>Как работает алгоритм</h3>
+    </div>
+    <div class="info-step">
+      <div class="step-num">1</div>
+      <div class="info-text">Если есть предыдущие дежурные — <strong>они перемещаются в конец очереди</strong>.</div>
+    </div>
+    <div class="info-step">
+      <div class="step-num">2</div>
+      <div class="info-text">Из обновлённой очереди выбираются <strong>первые два присутствующих</strong>.</div>
+    </div>
+    <div class="info-step">
+      <div class="step-num">3</div>
+      <div class="info-text">Новая пара становится <strong>текущими дежурными</strong>.</div>
+    </div>
+    <div class="info-step">
+      <div class="step-num">4</div>
+      <div class="info-text">При замене: <strong>«Не дежурил»</strong> — остаётся на месте. <strong>«Подежурил частично»</strong> — уйдёт в конец при следующем выборе.</div>
+    </div>
+    <div class="modal-actions">
+      <button class="close-btn" type="button" onclick="closeInfo()">Понятно</button>
+    </div>
   </section>
 
-  <section class="modal" id="authModal" aria-live="polite">
-    <h3>[ КОНТРОЛЬ ДОСТУПА ]</h3>
-    <div class="auth-grid">
-      <label for="authPasswordInput">[ ВВЕДИТЕ ПАРОЛЬ ДЛЯ ДОСТУПА К ДАННЫМ ]</label>
-      <input id="authPasswordInput" type="password" placeholder="ПАРОЛЬ" autocomplete="current-password" />
-      <p id="authError">[ ОШИБКА ] НЕВЕРНЫЙ ПАРОЛЬ.</p>
-      <button id="authSubmitBtn" type="button">[ ВОЙТИ ]</button>
+  <!-- AUTH MODAL -->
+  <section class="modal" id="authModal">
+    <div class="modal-header">
+      <div class="modal-eyebrow">Требуется доступ</div>
+      <h3>Введите пароль</h3>
+    </div>
+    <label class="auth-label" for="authPasswordInput">Пароль</label>
+    <div class="auth-input-wrap">
+      <input id="authPasswordInput" type="password" placeholder="••••••" autocomplete="current-password" />
+    </div>
+    <p id="authError">⚠ Неверный пароль. Попробуйте снова.</p>
+    <button id="authSubmitBtn" type="button">Войти →</button>
+  </section>
+
+  <!-- REPLACE MODAL -->
+  <section class="modal" id="replaceModal">
+    <div class="modal-header">
+      <div class="modal-eyebrow">Замена дежурного</div>
+      <h3 id="replaceTitle">Выберите параметры</h3>
+    </div>
+    <div id="replaceTargetName" class="replace-target"></div>
+
+    <div class="radio-group">
+      <label>
+        <input type="radio" name="replaceReason" value="not_worked" checked />
+        Не дежурил — остаётся на месте в очереди
+      </label>
+      <label>
+        <input type="radio" name="replaceReason" value="partially" />
+        Подежурил частично — уйдёт в конец при следующем выборе
+      </label>
+    </div>
+
+    <div class="replace-section-label">Дополнительно отсутствующие</div>
+    <div id="replaceStudentList" class="modal-student-list"></div>
+
+    <button id="confirmReplaceBtn" type="button">Подтвердить замену</button>
+    <div class="modal-actions">
+      <button type="button" class="close-btn" onclick="closeReplaceModal()">Отмена</button>
     </div>
   </section>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-    import { getAnalytics, isSupported } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
-    import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-database.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const students = [
       "Акопян Армен", "Больбат Вячеслав", "Вильгельм Эмма", "Голуб Анежа",
@@ -640,8 +1050,7 @@
       projectId: "dezhurstvo-add43",
       storageBucket: "dezhurstvo-add43.firebasestorage.app",
       messagingSenderId: "61679873706",
-      appId: "1:61679873706:web:91b499c7e5f389b2292ad3",
-      measurementId: "G-NC1ETFVR84"
+      appId: "1:61679873706:web:91b499c7e5f389b2292ad3"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -650,64 +1059,75 @@
     const AUTH_PASSWORD = "22-46";
     let isAuthorized = false;
 
-    isSupported().then((supported) => {
-      if (supported) {
-        getAnalytics(app);
-      }
-    });
-
     const stateRef = ref(db, "dutyState");
     const defaultState = {
       queue: students,
       history: [],
-      lastState: null
+      lastState: null,
+      currentDuty: { pair: [] },
+      pendingMove: [],
+      lastAbsent: []
     };
 
-    function showStateError(message = "") {
-      const errorEl = document.getElementById("stateError");
-      if (!message) {
-        errorEl.classList.remove("error");
-        errorEl.textContent = "";
-        return;
-      }
-      errorEl.textContent = `[ ОШИБКА ] ${message}`;
-      errorEl.classList.add("error");
+    // ── HELPERS ──
+    function showStateError(msg = "") {
+      const el = document.getElementById("stateError");
+      if (!msg) { el.classList.remove("error"); el.textContent = ""; }
+      else { el.innerHTML = `⚠ ${msg}`; el.classList.add("error"); }
     }
 
-    function setLoading(isLoading) {
-      document.getElementById("queueLoading").style.display = isLoading ? "grid" : "none";
+    function setLoading(loading) {
+      document.getElementById("queueLoading").style.display = loading ? "flex" : "none";
+    }
+
+    function openModal(id) {
+      const m = document.getElementById(id);
+      m.style.display = "block";
+      requestAnimationFrame(() => m.classList.add("open"));
+    }
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      m.classList.remove("open");
+      setTimeout(() => { m.style.display = "none"; }, 200);
+    }
+
+    function getInitials(name) {
+      const parts = name.trim().split(" ");
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      return name[0].toUpperCase();
     }
 
     function renderStudents() {
       const container = document.getElementById("studentList");
       container.innerHTML = "";
-
-      students.forEach((name) => {
-        const item = document.createElement("div");
-        item.className = "student-item";
-        item.innerHTML = `
-          <label>
-            <span>${name}</span>
-            <input type="checkbox" value="${name}" aria-label="${name}: отсутствует" />
-          </label>
-        `;
-        container.appendChild(item);
+      students.forEach(name => {
+        const div = document.createElement("div");
+        div.className = "student-item";
+        div.innerHTML = `<label><input type="checkbox" value="${name}"><span>${name}</span><span class="absent-badge">отсутствует</span></label>`;
+        container.appendChild(div);
       });
+      // Update absent count
+      container.addEventListener("change", updateAbsentCount);
+      document.getElementById("studentCount").textContent = students.length;
+    }
+
+    function updateAbsentCount() {
+      const count = document.querySelectorAll("#studentList input:checked").length;
+      document.getElementById("absentCount").textContent = count;
     }
 
     function renderQueue(queue) {
       const container = document.getElementById("queueView");
       container.innerHTML = "";
-
       if (!queue.length) {
-        container.innerHTML = '<p class="empty-state">[ ПУСТО ] ОЧЕРЕДЬ ПОКА ПУСТА.</p>';
+        container.innerHTML = '<div class="empty-state">Очередь пуста</div>';
         return;
       }
-
       for (let i = 0; i < queue.length; i += 2) {
         const row = document.createElement("div");
         row.className = "queue-row";
-        row.innerHTML = `<samp>${queue[i] || ""}</samp><samp>${queue[i + 1] || ""}</samp>`;
+        const num = Math.floor(i / 2) + 1;
+        row.innerHTML = `<span class="q-num">${num}</span><span>${queue[i] || ""}</span><span>${queue[i+1] || ""}</span>`;
         container.appendChild(row);
       }
     }
@@ -715,78 +1135,96 @@
     function renderHistory(history) {
       const container = document.getElementById("historyView");
       container.innerHTML = "";
-
       if (!history.length) {
-        container.innerHTML = '<p class="empty-state">[ ПУСТО ] ИСТОРИЯ ПОКА ПУСТА.</p>';
+        container.innerHTML = '<div class="empty-state">История пуста</div>';
         return;
       }
-
-      history.forEach((entry) => {
+      history.forEach((entry, idx) => {
+        if (!entry || typeof entry !== 'object') return;
+        const date = entry.date || '??.??.????';
+        let display = '';
+        if (entry.finalDuty) display = entry.finalDuty.join(" и ");
+        else if (Array.isArray(entry.duty)) display = entry.duty.join(" и ");
+        const hasReplacements = entry.replacements && entry.replacements.length;
         const row = document.createElement("div");
         row.className = "history-item";
-        row.innerText = `[ ${entry.date} ] — ${entry.duty.join(" и ")}`;
+        row.innerHTML = `<div class="history-date">${date}${hasReplacements ? ' · с заменами' : ''}</div><div class="history-names">${display}</div>`;
         container.appendChild(row);
       });
     }
 
-    function getAbsent() {
-      return Array.from(document.querySelectorAll("input:checked")).map((x) => x.value);
+    function getFormattedDate() {
+      return new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function renderCurrentDuty(currentDuty) {
+      const container = document.getElementById("currentDutyContainer");
+      const dateDisplay = document.getElementById("currentDateDisplay");
+      dateDisplay.textContent = getFormattedDate();
+
+      if (!currentDuty || !currentDuty.pair || currentDuty.pair.length === 0) {
+        container.innerHTML = '<div class="empty-state">Нет активных дежурных</div>';
+        return;
+      }
+      const pair = currentDuty.pair;
+      container.innerHTML = `<div class="duty-pair">
+        ${pair.map(name => `
+          <div class="duty-person">
+            <div class="duty-person-left">
+              <div class="duty-avatar">${getInitials(name)}</div>
+              <span class="duty-name">${name}</span>
+            </div>
+            <button class="replace-btn" data-name="${name}">Заменить</button>
+          </div>
+        `).join('')}
+      </div>`;
+      container.querySelectorAll('.replace-btn').forEach(btn => {
+        btn.addEventListener('click', () => openReplaceModal(btn.dataset.name));
+      });
+    }
+
+    function getAbsentFromMain() {
+      return Array.from(document.querySelectorAll("#studentList input:checked")).map(cb => cb.value);
+    }
+
+    function processPendingMove(queue, pendingMove) {
+      if (!pendingMove.length) return queue;
+      let newQueue = [...queue];
+      pendingMove.forEach(name => { newQueue = newQueue.filter(s => s !== name); });
+      newQueue.push(...pendingMove);
+      return newQueue;
     }
 
     function selectDuty(queue, absent) {
       const selected = [];
-      let newQueue = [];
-      const moved = [];
-
-      for (let i = 0; i < queue.length; i++) {
-        const student = queue[i];
-
-        if (selected.length < 2) {
-          if (!absent.includes(student)) {
-            selected.push(student);
-            moved.push(student);
-          } else {
-            newQueue.push(student);
-          }
-        } else {
-          newQueue.push(student);
-        }
+      for (const student of queue) {
+        if (selected.length < 2 && !absent.includes(student)) selected.push(student);
+        if (selected.length === 2) break;
       }
-
-      newQueue = newQueue.concat(moved);
-      return { selected, newQueue };
+      return { selected };
     }
 
     function buildHistory(history, selected) {
       const date = new Date().toLocaleDateString("ru-RU");
       const newHistory = [...history];
-
-      newHistory.unshift({
-        date,
-        duty: selected
-      });
-
-      if (newHistory.length > 10) {
-        newHistory.length = 10;
-      }
-
+      newHistory.unshift({ date, duty: selected, finalDuty: selected, replacements: [] });
+      if (newHistory.length > 10) newHistory.length = 10;
       return newHistory;
     }
 
     async function loadState() {
-      const snapshot = await get(stateRef);
-
-      if (!snapshot.exists()) {
-        await set(stateRef, defaultState);
-        return { ...defaultState };
+      const snap = await get(stateRef);
+      if (!snap.exists()) { await set(stateRef, defaultState); return { ...defaultState }; }
+      const data = snap.val();
+      let history = Array.isArray(data.history) ? data.history.filter(e => e && typeof e === 'object') : [];
+      const queue = Array.isArray(data.queue) ? data.queue : [...students];
+      const currentDuty = data.currentDuty || { pair: [] };
+      const pendingMove = Array.isArray(data.pendingMove) ? data.pendingMove : [];
+      const lastAbsent = Array.isArray(data.lastAbsent) ? data.lastAbsent : [];
+      if (JSON.stringify(history) !== JSON.stringify(data.history) || JSON.stringify(queue) !== JSON.stringify(data.queue)) {
+        await set(stateRef, { ...data, queue, history });
       }
-
-      const data = snapshot.val();
-      return {
-        queue: Array.isArray(data.queue) ? data.queue : [...students],
-        history: Array.isArray(data.history) ? data.history : [],
-        lastState: data.lastState ?? null
-      };
+      return { queue, history, lastState: data.lastState || null, currentDuty, pendingMove, lastAbsent };
     }
 
     async function initializeState() {
@@ -796,194 +1234,204 @@
         const state = await loadState();
         renderQueue(state.queue);
         renderHistory(state.history);
-      } catch (error) {
-        showStateError("НЕ УДАЛОСЬ ЗАГРУЗИТЬ СОСТОЯНИЕ БАЗЫ");
+        renderCurrentDuty(state.currentDuty);
+      } catch (e) {
+        console.error(e);
+        showStateError("Не удалось загрузить данные");
       } finally {
         setLoading(false);
       }
     }
 
-    async function tryUndoLastSelection() {
-      try {
-        showStateError();
-        const state = await loadState();
+    // ── REPLACE ──
+    let currentReplaceTarget = null;
 
-        if (!state.lastState) {
-          alert("Нет сохранённого последнего дежурства для отмены.");
-          return;
-        }
-
-        if (!Array.isArray(state.lastState.queue) || !Array.isArray(state.lastState.history)) {
-          alert("Не удалось восстановить предыдущее состояние.");
-          return;
-        }
-
-        await update(stateRef, {
-          queue: state.lastState.queue,
-          history: state.lastState.history,
-          lastState: null
-        });
-
-        renderQueue(state.lastState.queue);
-        renderHistory(state.lastState.history);
-        alert("Последнее дежурство отменено.");
-      } catch (error) {
-        showStateError("НЕ УДАЛОСЬ ВЫПОЛНИТЬ ОТМЕНУ");
-      }
+    async function openReplaceModal(name) {
+      if (!isAuthorized) { openAuthModal(); return; }
+      currentReplaceTarget = name;
+      document.getElementById("replaceTargetName").textContent = name;
+      const listContainer = document.getElementById("replaceStudentList");
+      listContainer.innerHTML = "";
+      const state = await loadState();
+      const savedAbsent = state.lastAbsent || [];
+      students.forEach(s => {
+        const div = document.createElement("div");
+        div.className = "student-item";
+        const checked = savedAbsent.includes(s) ? "checked" : "";
+        div.innerHTML = `<label><input type="checkbox" value="${s}" ${checked}><span>${s}</span><span class="absent-badge">отсутствует</span></label>`;
+        listContainer.appendChild(div);
+      });
+      document.getElementById("overlay").style.display = "block";
+      openModal("replaceModal");
     }
 
-    document.getElementById("selectBtn").onclick = async () => {
-      if (!isAuthorized) {
-        openAuthModal();
-        return;
-      }
+    window.closeReplaceModal = function() {
+      closeModal("replaceModal");
+      document.getElementById("overlay").style.display = "none";
+      currentReplaceTarget = null;
+    };
 
+    document.getElementById("confirmReplaceBtn").onclick = async () => {
+      if (!currentReplaceTarget) return;
+      const reason = document.querySelector('input[name="replaceReason"]:checked').value;
+      const extraAbsent = Array.from(document.querySelectorAll("#replaceStudentList input:checked")).map(cb => cb.value);
       try {
         showStateError();
         const state = await loadState();
-        const absent = getAbsent();
-        const result = selectDuty(state.queue, absent);
-        const newHistory = buildHistory(state.history, result.selected);
-
-        await update(stateRef, {
-          lastState: {
-            queue: state.queue,
-            history: state.history
-          },
-          queue: result.newQueue,
-          history: newHistory
-        });
-
-        const text = result.selected.join(" и ") || "нет";
-        document.getElementById("bigResult").innerText = text.toUpperCase();
-        document.getElementById("smallResult").innerText = `[ ${text} ]`;
-
+        if (!state.currentDuty.pair.length) { alert("Нет активных дежурных."); closeReplaceModal(); return; }
+        const currentPair = state.currentDuty.pair;
+        if (!currentPair.includes(currentReplaceTarget)) { alert("Этот студент не является текущим дежурным."); closeReplaceModal(); return; }
+        const otherDuty = currentPair.find(p => p !== currentReplaceTarget);
+        const allAbsent = [...new Set([...state.lastAbsent, ...extraAbsent])];
+        let replacement = null;
+        for (const student of state.queue) {
+          if (student === otherDuty || student === currentReplaceTarget) continue;
+          if (!allAbsent.includes(student)) { replacement = student; break; }
+        }
+        if (!replacement) { alert("Нет доступных студентов для замены."); closeReplaceModal(); return; }
+        const newPair = currentPair.map(p => p === currentReplaceTarget ? replacement : p);
+        const newCurrentDuty = { pair: newPair };
+        let newPendingMove = [...state.pendingMove];
+        if (reason === "not_worked") { newPendingMove = newPendingMove.filter(s => s !== currentReplaceTarget); }
+        else if (reason === "partially") { if (!newPendingMove.includes(currentReplaceTarget)) newPendingMove.push(currentReplaceTarget); }
+        if (!newPendingMove.includes(replacement)) newPendingMove.push(replacement);
+        newPendingMove = [...new Set(newPendingMove)];
+        const history = [...state.history];
+        if (history.length > 0) {
+          const last = { ...history[0] };
+          if (!last.replacements) last.replacements = [];
+          last.replacements.push({ original: currentReplaceTarget, replacement, reason, timestamp: new Date().toISOString() });
+          last.finalDuty = newPair;
+          history[0] = last;
+        }
+        const lastState = { queue: state.queue, history: state.history, currentDuty: state.currentDuty, pendingMove: state.pendingMove, lastAbsent: state.lastAbsent };
+        await update(stateRef, { queue: state.queue, history, currentDuty: newCurrentDuty, pendingMove: newPendingMove, lastState });
+        renderQueue(state.queue);
+        renderHistory(history);
+        renderCurrentDuty(newCurrentDuty);
+        closeReplaceModal();
+        document.getElementById("bigResult").textContent = newPair.join(" и ");
+        document.getElementById("smallResult").textContent = `Замена: ${currentReplaceTarget} → ${replacement}`;
         openResult();
-        renderQueue(result.newQueue);
-        renderHistory(newHistory);
+      } catch (e) {
+        console.error(e);
+        showStateError("Ошибка при замене дежурного");
+        closeReplaceModal();
+      }
+    };
 
-        document.querySelectorAll("input[type='checkbox']").forEach((checkbox) => {
-          checkbox.checked = false;
-        });
-      } catch (error) {
-        showStateError("НЕ УДАЛОСЬ ВЫБРАТЬ ДЕЖУРНЫХ");
+    // ── SELECT ──
+    document.getElementById("selectBtn").onclick = async () => {
+      if (!isAuthorized) { openAuthModal(); return; }
+      try {
+        showStateError();
+        const state = await loadState();
+        const absent = getAbsentFromMain();
+        let queueAfterMove = processPendingMove(state.queue, state.pendingMove);
+        const result = selectDuty(queueAfterMove, absent);
+        if (result.selected.length < 2) { alert("Недостаточно присутствующих студентов."); return; }
+        const newPendingMove = [...result.selected];
+        const newCurrentDuty = { pair: result.selected };
+        const newQueue = queueAfterMove;
+        const newHistory = buildHistory(state.history, result.selected);
+        const newLastAbsent = [...absent];
+        const lastState = { queue: state.queue, history: state.history, currentDuty: state.currentDuty, pendingMove: state.pendingMove, lastAbsent: state.lastAbsent };
+        await update(stateRef, { queue: newQueue, history: newHistory, currentDuty: newCurrentDuty, pendingMove: newPendingMove, lastAbsent: newLastAbsent, lastState });
+        document.getElementById("bigResult").textContent = result.selected.join(" и ");
+        document.getElementById("smallResult").textContent = result.selected.join(" и ");
+        openResult();
+        renderQueue(newQueue);
+        renderHistory(newHistory);
+        renderCurrentDuty(newCurrentDuty);
+        document.querySelectorAll("#studentList input[type='checkbox']").forEach(cb => cb.checked = false);
+        updateAbsentCount();
+      } catch (e) {
+        console.error(e);
+        showStateError("Не удалось выбрать дежурных");
       }
     };
 
     document.getElementById("undoBtn").onclick = async () => {
-      if (!isAuthorized) {
-        openAuthModal();
-        return;
-      }
-      await tryUndoLastSelection();
+      if (!isAuthorized) { openAuthModal(); return; }
+      try {
+        const state = await loadState();
+        if (!state.lastState) { alert("Нет сохранённого состояния для отмены."); return; }
+        await update(stateRef, { queue: state.lastState.queue, history: state.lastState.history, currentDuty: state.lastState.currentDuty, pendingMove: state.lastState.pendingMove, lastAbsent: state.lastState.lastAbsent, lastState: null });
+        renderQueue(state.lastState.queue);
+        renderHistory(state.lastState.history);
+        renderCurrentDuty(state.lastState.currentDuty);
+        alert("Последнее действие отменено.");
+      } catch (e) { showStateError("Не удалось отменить"); }
     };
 
     document.getElementById("resetBtn").onclick = async () => {
-      if (!isAuthorized) {
-        openAuthModal();
-        return;
-      }
-
-      if (!confirm("Вы точно хотите сбросить очередь и историю?")) {
-        return;
-      }
-
-      const resetPassword = prompt("Введите пароль для сброса:");
-      if (resetPassword === null) {
-        return;
-      }
-
-      if (resetPassword !== "22-46топ") {
-        alert("Неверный пароль. Сброс отменён.");
-        return;
-      }
-
+      if (!isAuthorized) { openAuthModal(); return; }
+      if (!confirm("Сбросить очередь и историю?")) return;
+      const pwd = prompt("Введите пароль для сброса:");
+      if (pwd !== "22-46топ") { alert("Неверный пароль."); return; }
       await set(stateRef, defaultState);
       location.reload();
     };
 
-    const overlay = document.getElementById("overlay");
-    const authModal = document.getElementById("authModal");
-    const authPasswordInput = document.getElementById("authPasswordInput");
-    const authSubmitBtn = document.getElementById("authSubmitBtn");
-    const authError = document.getElementById("authError");
-
+    // ── MODALS ──
     function openResult() {
-      overlay.style.display = "block";
-      document.getElementById("resultModal").style.display = "block";
+      document.getElementById("overlay").style.display = "block";
+      openModal("resultModal");
     }
-
-    function closeResult() {
-      overlay.style.display = "none";
-      document.getElementById("resultModal").style.display = "none";
-    }
-
-    window.closeResult = closeResult;
-
-    document.getElementById("infoBtn").onclick = () => {
-      overlay.style.display = "block";
-      document.getElementById("infoModal").style.display = "block";
+    window.closeResult = function() {
+      document.getElementById("overlay").style.display = "none";
+      closeModal("resultModal");
     };
 
-    function closeInfo() {
-      overlay.style.display = "none";
-      document.getElementById("infoModal").style.display = "none";
-    }
+    document.getElementById("infoBtn").onclick = () => {
+      document.getElementById("overlay").style.display = "block";
+      openModal("infoModal");
+    };
+    window.closeInfo = function() {
+      document.getElementById("overlay").style.display = "none";
+      closeModal("infoModal");
+    };
 
-    window.closeInfo = closeInfo;
+    // ── AUTH ──
+    const authModal = document.getElementById("authModal");
+    const authInput = document.getElementById("authPasswordInput");
+    const authError = document.getElementById("authError");
 
     function openAuthModal() {
-      overlay.style.display = "block";
-      authModal.style.display = "block";
-      authPasswordInput.focus();
-    }
-
-    function closeAuthModal() {
-      authModal.style.display = "none";
-      if (document.getElementById("resultModal").style.display !== "block" &&
-          document.getElementById("infoModal").style.display !== "block") {
-        overlay.style.display = "none";
-      }
+      document.getElementById("overlay").style.display = "block";
+      openModal("authModal");
+      setTimeout(() => authInput.focus(), 220);
     }
 
     async function handleAuth() {
-      const enteredPassword = authPasswordInput.value.trim();
-      if (enteredPassword !== AUTH_PASSWORD) {
+      if (authInput.value.trim() !== AUTH_PASSWORD) {
         authError.classList.add("visible");
-        authPasswordInput.value = "";
-        authPasswordInput.focus();
+        authInput.value = "";
+        authInput.focus();
         return;
       }
-
       authError.classList.remove("visible");
       localStorage.setItem(AUTH_KEY, "1");
       isAuthorized = true;
-      closeAuthModal();
-      authPasswordInput.value = "";
+      closeModal("authModal");
+      document.getElementById("overlay").style.display = "none";
+      authInput.value = "";
       await initializeState();
     }
 
-    authSubmitBtn.onclick = async () => {
-      await handleAuth();
-    };
+    document.getElementById("authSubmitBtn").onclick = handleAuth;
+    authInput.addEventListener("keydown", e => { if (e.key === "Enter") handleAuth(); });
 
-    authPasswordInput.addEventListener("keydown", async (event) => {
-      if (event.key === "Enter") {
-        await handleAuth();
-      }
-    });
-
-    overlay.onclick = () => {
-      if (authModal.style.display === "block") {
-        return;
-      }
+    document.getElementById("overlay").onclick = () => {
+      if (authModal.style.display === "block") return;
       closeResult();
       closeInfo();
+      closeReplaceModal();
     };
 
+    // ── INIT ──
     renderStudents();
     setLoading(true);
-
     if (localStorage.getItem(AUTH_KEY) === "1") {
       isAuthorized = true;
       initializeState();
