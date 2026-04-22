@@ -6,7 +6,7 @@
   <title>Дежурные — 22-46</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800&family=Unbounded:wght@700;900&display=swap" rel="stylesheet">
-  <style>
+<style>
     :root {
       --bg: #0f1117;
       --surface: #181c27;
@@ -266,14 +266,14 @@
       font-weight: 600;
     }
 
-    /* ── STUDENT LIST ── */
+    /* ===== НОВЫЕ СТИЛИ СПИСКОВ СТУДЕНТОВ ===== */
     .student-list {
+      border: 1px solid var(--border);
       max-height: 420px;
       overflow-y: auto;
+      background: transparent;
       margin: 0 22px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+      border-radius: var(--radius-sm);
     }
 
     .student-list::-webkit-scrollbar { width: 4px; }
@@ -281,22 +281,23 @@
     .student-list::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
 
     .student-item {
-      border-radius: 8px;
-      overflow: hidden;
+      border-bottom: 1px solid var(--border);
       transition: background 0.12s;
     }
+    .student-item:last-child { border-bottom: 0; }
+
     .student-item:hover { background: var(--surface2); }
 
     .student-item label {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto;
       align-items: center;
       gap: 12px;
-      padding: 9px 12px;
-      cursor: pointer;
+      padding: 10px 14px;
       font-size: 13.5px;
       font-weight: 500;
       color: var(--fg);
-      user-select: none;
+      cursor: pointer;
     }
 
     .student-item input[type="checkbox"] {
@@ -311,6 +312,7 @@
       flex-shrink: 0;
       position: relative;
       transition: all 0.15s;
+      margin: 0;
     }
     .student-item input[type="checkbox"]:checked {
       background: var(--accent2);
@@ -326,15 +328,16 @@
       font-size: 10px;
       font-weight: 800;
       color: #fff;
-      line-height: 18px;
-      text-align: center;
-      width: 100%;
     }
-    .student-item:has(input:checked) label { color: var(--fg-muted); text-decoration: line-through; }
-    .student-item:has(input:checked) { background: rgba(255,107,138,0.05); }
+    .student-item:has(input:checked) label {
+      color: var(--fg-muted);
+      text-decoration: line-through;
+    }
+    .student-item:has(input:checked) {
+      background: rgba(255,107,138,0.05);
+    }
 
     .absent-badge {
-      margin-left: auto;
       font-size: 10px;
       font-weight: 700;
       color: var(--accent2);
@@ -344,6 +347,93 @@
       transition: opacity 0.15s;
     }
     .student-item:has(input:checked) .absent-badge { opacity: 1; }
+
+    /* Модальный список (замена) */
+    .modal-student-list {
+      border: 1px solid var(--border);
+      max-height: 360px;
+      overflow-y: auto;
+      margin: 0 0 16px 0;
+      background: transparent;
+      border-radius: var(--radius-sm);
+    }
+
+    .modal-student-list::-webkit-scrollbar { width: 4px; }
+    .modal-student-list::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
+
+    .modal-student-list .student-item {
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-student-list .student-item:last-child { border-bottom: 0; }
+
+    .modal-student-list .student-item label {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--fg);
+      cursor: pointer;
+    }
+
+    .modal-student-list .student-item input[type="checkbox"] {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border: 1.5px solid var(--border-light);
+      border-radius: 5px;
+      background: var(--surface2);
+      cursor: pointer;
+      flex-shrink: 0;
+      position: relative;
+      transition: all 0.15s;
+      margin: 0;
+    }
+
+    .modal-student-list .student-item input[type="checkbox"]:checked {
+      background: var(--accent2);
+      border-color: var(--accent2);
+    }
+
+    .modal-student-list .student-item input[type="checkbox"]:checked::after {
+      content: '✕';
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .modal-student-list .student-item:has(input:checked) label {
+      color: var(--fg-muted);
+      text-decoration: line-through;
+    }
+
+    .modal-student-list .student-item:has(input:checked) {
+      background: rgba(255,107,138,0.05);
+    }
+
+    .modal-student-list .absent-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--accent2);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .modal-student-list .student-item:has(input:checked) .absent-badge {
+      opacity: 1;
+    }
+
+    /* ===== КОНЕЦ СТИЛЕЙ СПИСКОВ ===== */
 
     /* ── CONTROLS ── */
     .controls {
@@ -768,30 +858,39 @@
       margin-bottom: 8px;
     }
 
-    .modal-student-list {
-      max-height: 240px;
-      overflow-y: auto;
+    /* Горизонтальный ряд для кнопок замены */
+    .modal-actions-row {
       display: flex;
-      flex-direction: column;
-      gap: 2px;
-      margin-bottom: 16px;
+      gap: 10px;
+      margin-top: 10px;
     }
-    .modal-student-list::-webkit-scrollbar { width: 3px; }
-    .modal-student-list::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
-
+    .modal-actions-row button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 9px;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.18s ease;
+    }
     #confirmReplaceBtn {
       background: linear-gradient(135deg, #ff6b8a, #f43f5e);
       color: #fff;
-      font-family: 'Onest', sans-serif;
-      font-size: 14px;
-      font-weight: 700;
-      padding: 13px;
-      border-radius: 9px;
       border: none;
-      width: 100%;
       box-shadow: 0 4px 16px rgba(255,107,138,0.2);
     }
-    #confirmReplaceBtn:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,107,138,0.35); }
+    #confirmReplaceBtn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(255,107,138,0.35);
+    }
+    .modal-actions-row .close-btn {
+      background: var(--surface2);
+      color: var(--fg-muted);
+      border: 1px solid var(--border);
+    }
+    .modal-actions-row .close-btn:hover {
+      color: var(--fg);
+      border-color: var(--border-light);
+    }
 
     /* TAG */
     .tag {
@@ -882,7 +981,7 @@
         <div class="controls">
           <button id="selectBtn" type="button">✦ Выбрать дежурных</button>
           <div class="controls-row">
-            <button id="undoBtn" type="button">↩ Отменить</button>
+            <!-- Кнопка "Отменить" удалена -->
             <button id="infoBtn" type="button">ℹ Алгоритм</button>
           </div>
         </div>
@@ -1013,19 +1112,19 @@
     <div class="radio-group">
       <label>
         <input type="radio" name="replaceReason" value="not_worked" checked />
-        Не дежурил — остаётся на месте в очереди
+        Ушёл раньше
       </label>
       <label>
         <input type="radio" name="replaceReason" value="partially" />
-        Подежурил частично — уйдёт в конец при следующем выборе
+        Подежурил не на всех парах
       </label>
     </div>
 
     <div class="replace-section-label">Дополнительно отсутствующие</div>
     <div id="replaceStudentList" class="modal-student-list"></div>
 
-    <button id="confirmReplaceBtn" type="button">Подтвердить замену</button>
-    <div class="modal-actions">
+    <div class="modal-actions-row">
+      <button id="confirmReplaceBtn" type="button">Подтвердить замену</button>
       <button type="button" class="close-btn" onclick="closeReplaceModal()">Отмена</button>
     </div>
   </section>
@@ -1311,7 +1410,6 @@
         renderCurrentDuty(newCurrentDuty);
         closeReplaceModal();
         document.getElementById("bigResult").textContent = newPair.join(" и ");
-        document.getElementById("smallResult").textContent = `Замена: ${currentReplaceTarget} → ${replacement}`;
         openResult();
       } catch (e) {
         console.error(e);
@@ -1351,18 +1449,7 @@
       }
     };
 
-    document.getElementById("undoBtn").onclick = async () => {
-      if (!isAuthorized) { openAuthModal(); return; }
-      try {
-        const state = await loadState();
-        if (!state.lastState) { alert("Нет сохранённого состояния для отмены."); return; }
-        await update(stateRef, { queue: state.lastState.queue, history: state.lastState.history, currentDuty: state.lastState.currentDuty, pendingMove: state.lastState.pendingMove, lastAbsent: state.lastState.lastAbsent, lastState: null });
-        renderQueue(state.lastState.queue);
-        renderHistory(state.lastState.history);
-        renderCurrentDuty(state.lastState.currentDuty);
-        alert("Последнее действие отменено.");
-      } catch (e) { showStateError("Не удалось отменить"); }
-    };
+    // Обработчик кнопки "Отменить" удалён
 
     document.getElementById("resetBtn").onclick = async () => {
       if (!isAuthorized) { openAuthModal(); return; }
